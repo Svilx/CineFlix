@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CineFlix | Global VPN Explorer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&family=Plus+Jakarta+Sans:wght@800&display=swap');
+        
+        :root {
+            --lb-bg: #14181c;
+            --lb-card: #1c2328;
+            --lb-text: #9ab;
+            --lb-orange: #ff8000;
+            --lb-green: #00e054;
+            --lb-blue: #40bcf4;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--lb-bg);
+            color: #fff;
+        }
+
+        /* CineFlix Studio-Style Title */
+        .brand-title {
+            font-family: 'Inter', sans-serif;
+            font-weight: 900;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            color: #ffffff;
+            position: relative;
+            display: inline-block;
+        }
+
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 280px;
+        }
+
+        .search-container {
+            transition: all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .modal-overlay {
+            background: rgba(10, 12, 14, 0.95);
+            backdrop-filter: blur(8px);
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .animate-slide-up {
+            animation: slideUp 0.4s ease-out forwards;
+        }
+
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+        }
+        .scrollbar-hide {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        .poster-card {
+            position: relative;
+            transition: transform 0.2s ease-in-out;
+        }
+        .poster-card::after {
+            content: '';
+            position: absolute;
+            inset: -2px;
+            border-radius: 8px;
+            background: linear-gradient(90deg, var(--lb-orange), var(--lb-green), var(--lb-blue));
+            z-index: -1;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+        .poster-card:hover::after {
+            opacity: 1;
+        }
+        .poster-card:hover {
+            transform: translateY(-4px);
+        }
+
+        .service-btn {
+            transition: all 0.2s ease;
+            background: #243038;
+            border: 1px solid #303d47;
+        }
+        .service-btn:hover {
+            border-color: #445566;
+        }
+        .service-active {
+            background: #445566 !important;
+            border-color: #fff !important;
+            color: #fff !important;
+        }
+
+        /* Direct Redirect Link Styling */
+        .provider-link {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+            text-decoration: none;
+        }
+        .provider-link:hover {
+            background-color: var(--lb-green);
+            color: #14181c !important;
+            border-color: #fff;
+            transform: scale(1.05);
+        }
+        .provider-link:hover span {
+            color: #14181c !important;
+        }
+
+        input::placeholder {
+            color: #678;
+        }
+
+        .nav-btn {
+            transition: all 0.2s ease;
+            background: #2c3440;
+        }
+        .nav-btn:hover:not(:disabled) {
+            background: #445566;
+            color: #fff;
+        }
+        .nav-btn:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body class="overflow-x-hidden selection:bg-green-500/30">
+
+    <div id="app" class="min-h-screen flex flex-col items-center px-6 transition-all duration-500 pt-16 md:pt-24 pb-24">
+        
+        <!-- Brand Header -->
+        <header id="main-header" class="mb-14 text-center transition-all duration-700">
+            <div class="text-6xl mb-6 drop-shadow-xl">🎞️</div>
+            <h1 class="text-4xl md:text-5xl brand-title">
+                CINEFLIX
+            </h1>
+            <p id="tagline" class="text-[#9ab] max-w-md mx-auto font-medium text-sm tracking-widest mt-6 opacity-80 uppercase text-center">Find films you want to watch</p>
+        </header>
+
+        <!-- Command Deck -->
+        <div id="search-section" class="w-full max-w-4xl search-container relative z-10 mb-12">
+            <form id="search-form" class="relative group mb-8">
+                <input 
+                    type="text" 
+                    id="search-input"
+                    placeholder="Search for a film..." 
+                    class="w-full h-14 py-4 px-14 bg-[#2c3440] border-none rounded-xl text-white text-lg shadow-inner outline-none focus:ring-2 ring-[#00e054]/50 transition-all"
+                >
+                <div class="absolute left-5 top-1/2 -translate-y-1/2 opacity-40">🔍</div>
+                <button type="submit" class="absolute right-2 top-1/2 -translate-y-1/2 bg-[#00e054] hover:bg-[#00c044] text-[#14181c] px-6 py-2 rounded-lg font-black shadow-lg transition-all active:scale-95 uppercase text-xs tracking-widest">
+                    Search
+                </button>
+            </form>
+            
+            <div id="filter-wrapper" class="bg-[#1c2328] p-6 md:p-8 rounded-2xl border border-[#2c3440] shadow-2xl flex flex-col items-start gap-4 animate-in fade-in duration-700">
+                <div class="flex flex-col gap-3 w-full">
+                    <div class="flex justify-between items-center px-1">
+                        <span class="text-[10px] font-black text-[#678] uppercase tracking-[0.2em]">MY SUBSCRIPTIONS</span>
+                        <button onclick="clearServices()" class="text-[9px] font-black text-[#9ab] uppercase hover:text-white transition-colors">Clear All</button>
+                    </div>
+                    <div id="service-filters" class="flex flex-wrap gap-2">
+                        <!-- Filter buttons injected via JS -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Movie Grid (Search Results) -->
+        <section id="results-grid" class="max-w-7xl mx-auto grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6 md:gap-8 hidden animate-slide-up w-full">
+            <!-- Cards injected via JS -->
+        </section>
+
+        <!-- Popular Releases Section -->
+        <section id="popular-container" class="max-w-7xl mx-auto w-full mt-24">
+            <div class="flex items-center justify-between mb-8 border-b border-[#2c3440] pb-4">
+                <div class="flex items-center gap-4">
+                    <h3 class="text-xs font-black text-[#9ab] uppercase tracking-[0.3em]">Popular Releases</h3>
+                    <span class="text-[10px] text-[#678] font-bold uppercase tracking-widest px-2 py-0.5 border border-[#2c3440] rounded">Trending</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button id="prev-popular" onclick="changePopularPage(-1)" class="nav-btn p-2 rounded-lg text-[#9ab] hover:text-white" disabled>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M11.354 1.646a.5.5 0 0 1 0 .708L5.707 8l5.647 5.646a.5.5 0 0 1-.708.708l-6-6a.5.5 0 0 1 0-.708l6-6a.5.5 0 0 1 .708 0z"/></svg>
+                    </button>
+                    <button id="next-popular" onclick="changePopularPage(1)" class="nav-btn p-2 rounded-lg text-[#9ab] hover:text-white">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"/></svg>
+                    </button>
+                </div>
+            </div>
+            <div id="popular-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6 md:gap-8 min-h-[400px]">
+                <!-- Popular items injected via JS -->
+            </div>
+        </section>
+
+    </div>
+
+    <!-- Intelligence Modal -->
+    <div id="movie-modal" class="fixed inset-0 z-[60] flex items-center justify-center p-4 md:p-8 hidden">
+        <div class="modal-overlay absolute inset-0" onclick="closeModal()"></div>
+        <div class="relative w-full max-w-6xl bg-[#14181c] rounded-3xl shadow-[0_0_50px_rgba(0,0,0,0.8)] border border-[#2c3440] flex flex-col md:flex-row overflow-hidden max-h-[90vh]">
+            
+            <div class="w-full md:w-1/3 bg-[#1b2228] p-6 md:p-10 border-r border-[#2c3440] overflow-y-auto border-b md:border-b-0">
+                <div id="modal-poster-container" class="aspect-[2/3] rounded-xl overflow-hidden shadow-2xl mb-8 border border-[#456] bg-[#0c0e10] flex items-center justify-center">
+                    <!-- Poster injected here -->
+                </div>
+                <h2 id="modal-title" class="text-3xl font-black text-white mb-3 tracking-tight leading-none"></h2>
+                <div class="flex gap-2 mb-6">
+                    <span id="modal-year" class="text-[10px] font-black bg-[#2c3440] px-2.5 py-1 rounded border border-[#456] text-[#9ab] uppercase tracking-widest"></span>
+                    <span id="modal-rating" class="text-[10px] font-black bg-[#00e054]/10 px-2.5 py-1 rounded border border-[#00e054]/20 text-[#00e054]"></span>
+                </div>
+                <p id="modal-overview" class="text-[#9ab] text-sm leading-relaxed mb-8 font-medium"></p>
+                
+                <div class="mt-6 pt-8 border-t border-[#2c3440]">
+                    <h4 class="text-[10px] font-black uppercase tracking-[0.2em] text-[#678] mb-6">PROVIDER DISTRIBUTION</h4>
+                    <div class="chart-container">
+                        <canvas id="distributionChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex-1 p-6 md:p-12 overflow-y-auto bg-[#14181c]">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-4">
+                    <div>
+                        <h3 class="text-2xl font-black tracking-tight text-white uppercase italic">Available Locations</h3>
+                    </div>
+                    <div class="px-4 py-1.5 bg-[#40bcf4] text-[#14181c] rounded-md text-[10px] font-black uppercase tracking-widest">
+                        SYNCED
+                    </div>
+                </div>
+
+                <div id="availability-list" class="space-y-4">
+                    <!-- Data rows injected here -->
+                </div>
+
+                <div id="no-data-alert" class="hidden text-center py-20 bg-[#1c2328] rounded-2xl border border-[#2c3440]">
+                    <div class="text-4xl mb-4">🌑</div>
+                    <p class="text-white font-black uppercase tracking-widest text-sm">No Matches Found</p>
+                    <p class="text-[#678] text-[10px] mt-2 uppercase tracking-widest font-bold">Try adjusting filters</p>
+                </div>
+            </div>
+
+            <button onclick="closeModal()" class="absolute top-4 right-4 md:top-6 md:right-6 w-10 h-10 md:w-12 md:h-12 bg-[#2c3440] hover:bg-[#456] text-white rounded-full flex items-center justify-center text-lg transition-all shadow-xl">✕</button>
+        </div>
+    </div>
+
+    <div id="toast" class="fixed bottom-10 left-1/2 -translate-x-1/2 z-[100] px-8 py-4 bg-[#00e054] text-[#14181c] text-xs font-black uppercase tracking-[0.2em] rounded-md shadow-2xl opacity-0 transition-all pointer-events-none">
+        Region Copied
+    </div>
+
+    <script>
+        // --- DATA & STATE ---
+        const MY_PRIVATE_API_KEY = "f5a1a52fdacf4c84146fde7b9c828a86";
+
+        const SERVICES = [
+            { id: 8, name: 'Netflix', color: '#E50914' },
+            { id: 337, name: 'Disney+', color: '#006E99' },
+            { id: 119, name: 'Prime Video', color: '#00A8E1' },
+            { id: 384, name: 'HBO Max', color: '#743AD5' },
+            { id: 15, name: 'Hulu', color: '#1CE783' },
+            { id: 350, name: 'Apple TV+', color: '#ffffff' },
+            { id: 531, name: 'Paramount+', color: '#0064FF' },
+            { id: 386, name: 'Peacock', color: '#ffffff' },
+            { id: 283, name: 'Crunchyroll', color: '#F47521' },
+            { id: 432, name: 'Discovery+', color: '#0055D4' },
+            { id: 11, name: 'Mubi', color: '#ffffff' },
+            { id: 230, name: 'Crave', color: '#ffffff' },
+            { id: 67, name: 'Stan', color: '#0000FF' },
+            { id: 2, name: 'Apple TV', color: '#A2AAAD' },
+            { id: 3, name: 'Google Play', color: '#34A853' },
+            { id: 192, name: 'YouTube', color: '#FF0000' }
+        ];
+
+        let state = {
+            apiKey: MY_PRIVATE_API_KEY,
+            myServices: JSON.parse(localStorage.getItem('vpn_my_services') || '[]'),
+            currentResults: [],
+            popularMovies: [],
+            popularPage: 1,
+            selectedMovieProviders: null,
+            selectedMovieTitle: '',
+            chart: null
+        };
+
+        const COUNTRY_NAMES = new Intl.DisplayNames(['en'], { type: 'region' });
+
+        // --- DIRECT SEARCH ENGINE ---
+        function getDirectOfficialLink(providerName, movieTitle) {
+            const query = encodeURIComponent(movieTitle);
+            const lowerName = providerName.toLowerCase();
+
+            if (lowerName.includes('netflix')) return `https://www.netflix.com/search?q=${query}`;
+            if (lowerName.includes('disney')) return `https://www.disneyplus.com/search?q=${query}`;
+            if (lowerName.includes('amazon') || lowerName.includes('prime')) return `https://www.amazon.com/s?k=${query}&i=instant-video`;
+            if (lowerName.includes('hbo') || lowerName.includes('max')) return `https://www.max.com/search/${query}/`;
+            if (lowerName.includes('hulu')) return `https://www.hulu.com/search?q=${query}`;
+            if (lowerName.includes('apple')) return `https://tv.apple.com/search/${query}`;
+            if (lowerName.includes('peacock')) return `https://www.peacocktv.com/search/${query}`;
+            if (lowerName.includes('paramount')) return `https://www.paramountplus.com/search/?q=${query}`;
+            if (lowerName.includes('crunchyroll')) return `https://www.crunchyroll.com/search?q=${query}`;
+            if (lowerName.includes('stan')) return `https://www.stan.com.au/search?q=${query}`;
+            if (lowerName.includes('mubi')) return `https://mubi.com/search?q=${query}`;
+            if (lowerName.includes('crave')) return `https://www.crave.ca/en/search?q=${query}`;
+            if (lowerName.includes('discovery')) return `https://www.discoveryplus.com/search?q=${query}`;
+            if (lowerName.includes('youtube')) return `https://www.youtube.com/results?search_query=${query}+movie`;
+            if (lowerName.includes('google')) return `https://play.google.com/store/search?q=${query}&c=movies`;
+            
+            return `https://www.google.com/search?q=watch+${query}+on+${encodeURIComponent(providerName)}`;
+        }
+
+        // --- CORE LOGIC ---
+        function init() {
+            renderFilters();
+            fetchPopularMovies(state.popularPage);
+            
+            document.getElementById('search-form').onsubmit = (e) => {
+                e.preventDefault();
+                const q = document.getElementById('search-input').value;
+                if (q) performSearch(q);
+            };
+        }
+
+        async function fetchPopularMovies(page) {
+            try {
+                const res = await fetch(`https://api.themoviedb.org/3/movie/popular?api_key=${state.apiKey}&language=en-US&page=${page}`);
+                const data = await res.json();
+                state.popularMovies = data.results || [];
+                renderPopularGrid();
+                
+                document.getElementById('prev-popular').disabled = page <= 1;
+                document.getElementById('next-popular').disabled = !data.results || data.results.length < 12;
+            } catch (err) {
+                console.error("Popular fetch failed", err);
+            }
+        }
+
+        function changePopularPage(delta) {
+            state.popularPage += delta;
+            if (state.popularPage < 1) state.popularPage = 1;
+            
+            document.getElementById('popular-grid').style.opacity = '0.5';
+            fetchPopularMovies(state.popularPage).then(() => {
+                document.getElementById('popular-grid').style.opacity = '1';
+                document.getElementById('popular-container').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            });
+        }
+
+        function renderPopularGrid() {
+            const grid = document.getElementById('popular-grid');
+            grid.innerHTML = state.popularMovies.slice(0, 12).map(movie => createMovieCard(movie, true)).join('');
+        }
+
+        async function performSearch(query) {
+            try {
+                const url = `https://api.themoviedb.org/3/search/movie?api_key=${state.apiKey}&query=${encodeURIComponent(query)}&include_adult=false`;
+                const res = await fetch(url);
+                const data = await res.json();
+                
+                if (data.results) {
+                    state.currentResults = data.results;
+                    updateLayoutForResults();
+                    renderResultsGrid();
+                }
+            } catch (err) {
+                console.error("Search failed", err);
+            }
+        }
+
+        function updateLayoutForResults() {
+            document.getElementById('main-header').classList.add('hidden');
+            document.getElementById('app').classList.remove('justify-center');
+            document.getElementById('app').classList.add('pt-4');
+            document.getElementById('search-section').classList.add('search-active');
+            document.getElementById('results-grid').classList.remove('hidden');
+            document.getElementById('popular-container').classList.add('mt-32');
+        }
+
+        function renderResultsGrid() {
+            const grid = document.getElementById('results-grid');
+            grid.innerHTML = state.currentResults.map(movie => createMovieCard(movie, false)).join('');
+        }
+
+        function createMovieCard(movie, isPopular) {
+            return `
+                <div onclick="openMovieDetails(${movie.id}, ${isPopular})" class="group cursor-pointer animate-slide-up flex flex-col items-center">
+                    <div class="poster-card aspect-[2/3] w-full rounded-lg overflow-hidden border border-[#2c3440] bg-[#0c0e10] shadow-xl">
+                        ${movie.poster_path 
+                            ? `<img src="https://image.tmdb.org/t/p/w500${movie.poster_path}" class="w-full h-full object-cover">`
+                            : `<div class="w-full h-full flex items-center justify-center text-[#456] italic text-[9px] uppercase p-4 text-center">No Poster</div>`
+                        }
+                    </div>
+                    <div class="mt-3 w-full text-left px-1">
+                        <h4 class="font-black text-[11px] uppercase tracking-wider text-white truncate leading-tight group-hover:text-green-400 transition-colors">${movie.title}</h4>
+                        <p class="text-[9px] font-black text-[#678] uppercase mt-1 tracking-[0.1em]">${movie.release_date ? movie.release_date.split('-')[0] : 'TBA'}</p>
+                    </div>
+                </div>
+            `;
+        }
+
+        async function openMovieDetails(id, isPopular) {
+            const movie = isPopular 
+                ? state.popularMovies.find(m => m.id === id)
+                : state.currentResults.find(m => m.id === id);
+                
+            if (!movie) return;
+
+            state.selectedMovieTitle = movie.title;
+            document.getElementById('movie-modal').classList.remove('hidden');
+            document.getElementById('modal-title').innerText = movie.title;
+            document.getElementById('modal-year').innerText = movie.release_date ? movie.release_date.split('-')[0] : 'TBA';
+            document.getElementById('modal-rating').innerText = `★ ${movie.vote_average.toFixed(1)}`;
+            document.getElementById('modal-overview').innerText = movie.overview;
+            document.getElementById('modal-poster-container').innerHTML = movie.poster_path 
+                ? `<img src="https://image.tmdb.org/t/p/w500${movie.poster_path}" class="w-full h-full object-cover">`
+                : `<span class="text-[#456] italic text-xs uppercase tracking-widest">No Image</span>`;
+
+            try {
+                const res = await fetch(`https://api.themoviedb.org/3/movie/${id}/watch/providers?api_key=${state.apiKey}`);
+                const data = await res.json();
+                state.selectedMovieProviders = data.results || {};
+                renderAvailability();
+                updateChart();
+            } catch (err) {
+                console.error("Provider fetch failed", err);
+            }
+        }
+
+        function renderAvailability() {
+            if (!state.selectedMovieProviders) return;
+            
+            const list = document.getElementById('availability-list');
+            const filteredResults = Object.entries(state.selectedMovieProviders).filter(([code, data]) => {
+                if (!data.flatrate) return false;
+                if (state.myServices.length === 0) return true;
+                return data.flatrate.some(p => state.myServices.includes(p.provider_id));
+            });
+
+            if (filteredResults.length === 0) {
+                list.innerHTML = '';
+                document.getElementById('no-data-alert').classList.remove('hidden');
+                return;
+            }
+
+            document.getElementById('no-data-alert').classList.add('hidden');
+            
+            list.innerHTML = filteredResults.map(([code, data]) => `
+                <div class="group flex flex-col md:flex-row items-center justify-between p-5 bg-[#1c2328] border-2 border-[#2c3440] rounded-xl transition-all hover:border-[#456]">
+                    <div class="flex items-center gap-5 mb-4 md:mb-0 cursor-pointer" onclick="copyCode('${code}')" title="Click to copy region code">
+                        <div class="w-12 h-9 shrink-0 shadow-lg border border-[#2c3440] rounded overflow-hidden relative">
+                            <img src="https://flagcdn.com/w80/${code.toLowerCase()}.png" class="w-full h-full object-cover" alt="${code}">
+                        </div>
+                        <div class="text-center md:text-left">
+                            <h5 class="font-black text-white text-sm leading-none mb-1.5 flex items-center justify-center md:justify-start gap-2">
+                                ${getCountryName(code)}
+                            </h5>
+                            <p class="text-[8px] font-black text-[#678] uppercase tracking-[0.2em]">VPN REGION: ${code}</p>
+                        </div>
+                    </div>
+                    <div class="flex flex-wrap justify-center gap-2">
+                        ${data.flatrate.map(p => {
+                            const directLink = getDirectOfficialLink(p.provider_name, state.selectedMovieTitle);
+                            return `
+                            <a href="${directLink}" target="_blank" rel="noopener noreferrer" class="provider-link flex items-center gap-2.5 bg-[#14181c] px-3 py-1.5 rounded border border-[#2c3440]" title="Search on ${p.provider_name}">
+                                <img src="https://image.tmdb.org/t/p/original${p.logo_path}" class="w-4 h-4 rounded-sm">
+                                <span class="text-[10px] font-black uppercase text-[#9ab] tracking-tight transition-colors">${p.provider_name}</span>
+                            </a>
+                            `;
+                        }).join('')}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function updateChart() {
+            if (!state.selectedMovieProviders) return;
+            const ctx = document.getElementById('distributionChart').getContext('2d');
+            
+            const counts = {};
+            Object.values(state.selectedMovieProviders).forEach(countryData => {
+                if (countryData.flatrate) {
+                    countryData.flatrate.forEach(p => {
+                        counts[p.provider_name] = (counts[p.provider_name] || 0) + 1;
+                    });
+                }
+            });
+
+            const labels = Object.keys(counts).slice(0, 5);
+            const values = Object.values(counts).slice(0, 5);
+
+            if (state.chart) state.chart.destroy();
+
+            state.chart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: values,
+                        backgroundColor: ['#ff8000', '#00e054', '#40bcf4', '#ffffff', '#445566'],
+                        borderWidth: 0,
+                        hoverOffset: 12
+                    }]
+                },
+                options: {
+                    maintainAspectRatio: false,
+                    cutout: '80%',
+                    plugins: {
+                        legend: { 
+                            position: 'bottom', 
+                            labels: { 
+                                boxWidth: 6, 
+                                padding: 15, 
+                                color: '#9ab',
+                                font: { size: 9, weight: 'bold' } 
+                            } 
+                        }
+                    }
+                }
+            });
+        }
+
+        // --- PREFERENCES ---
+        function renderFilters() {
+            const container = document.getElementById('service-filters');
+            container.innerHTML = SERVICES.map(s => `
+                <button 
+                    onclick="toggleService(${s.id})" 
+                    id="filter-${s.id}"
+                    class="service-btn flex items-center gap-2 px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${state.myServices.includes(s.id) ? 'service-active' : 'text-[#9ab]'}"
+                >
+                    <div class="w-1.5 h-1.5 rounded-full" style="background: ${s.color}"></div>
+                    ${s.name}
+                </button>
+            `).join('');
+        }
+
+        function toggleService(id) {
+            if (state.myServices.includes(id)) {
+                state.myServices = state.myServices.filter(x => x !== id);
+            } else {
+                state.myServices.push(id);
+            }
+            localStorage.setItem('vpn_my_services', JSON.stringify(state.myServices));
+            renderFilters();
+            if (!document.getElementById('movie-modal').classList.contains('hidden')) {
+                renderAvailability();
+            }
+        }
+
+        function clearServices() {
+            state.myServices = [];
+            localStorage.setItem('vpn_my_services', JSON.stringify(state.myServices));
+            renderFilters();
+            if (!document.getElementById('movie-modal').classList.contains('hidden')) {
+                renderAvailability();
+            }
+        }
+
+        // --- UTILS ---
+        function getCountryName(code) {
+            try { return COUNTRY_NAMES.of(code.toUpperCase()); } catch (e) { return code; }
+        }
+
+        function copyCode(code) {
+            const temp = document.createElement('textarea');
+            temp.value = code;
+            document.body.appendChild(temp);
+            temp.select();
+            document.execCommand('copy');
+            document.body.removeChild(temp);
+            
+            const toast = document.getElementById('toast');
+            toast.innerText = `Region Code Copied: ${code}`;
+            toast.style.opacity = '1';
+            setTimeout(() => toast.style.opacity = '0', 2000);
+        }
+
+        function closeModal() {
+            document.getElementById('movie-modal').classList.add('hidden');
+            state.selectedMovieProviders = null;
+        }
+
+        window.onload = init;
+    </script>
+</body>
+</html>
